@@ -100,11 +100,12 @@
         }
       );
 
-      # x86_64 only: a VM test cannot be built on a machine that cannot run the
-      # guest, and pretending otherwise just breaks `nix flake check` elsewhere.
+      # Defined for both systems. It only *builds* on a host that can run the
+      # guest, which is why CI runs the aarch64 one on an arm runner rather than
+      # emulating it; `nix flake check --no-build` still evaluates both.
       checks = forAllSystems (
         system:
-        lib.optionalAttrs (system == "x86_64-linux") {
+        {
           boot = import ./checks/boot.nix {
             pkgs = pkgsFor system;
             inherit self;
