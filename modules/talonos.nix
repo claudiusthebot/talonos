@@ -87,8 +87,8 @@ in
 
     claudePackage = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
-      default = pkgs.claude-code or null;
-      defaultText = lib.literalExpression "pkgs.claude-code";
+      default = pkgs.claude-agent-cli or null;
+      defaultText = lib.literalExpression "pkgs.claude-agent-cli";
       description = ''
         The Claude Code CLI the agent shells out to, placed on PATH and written
         into config as `claudeBinary`.
@@ -98,8 +98,14 @@ in
         discovery and exits into a restart loop. An OS for running Talon has to
         ship the backend.
 
-        Set to null to manage the backend yourself. Note that claude-code is
-        unfree, so a configuration that keeps this default must permit it.
+        It must also be the CLI generation that matches the agent SDK compiled
+        into the pinned Talon release: nixpkgs' independently-versioned
+        `claude-code` fails model discovery with
+        `unknown option '--allow-dangerously-skip-permissions'`. See
+        pkgs/claude-agent-cli.
+
+        Set to null to manage the backend yourself. The CLI is unfree, so a
+        configuration that keeps this default must permit it by name.
       '';
     };
 

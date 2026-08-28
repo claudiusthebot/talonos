@@ -4,9 +4,14 @@
 { lib, ... }:
 
 {
-  # The backend CLI (claude-code) is unfree. Allow that one package by name;
-  # a blanket allowUnfree would quietly permit anything a future dependency drags in.
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
+  # The backend CLI is unfree. Allow those packages by name; a blanket
+  # allowUnfree would quietly permit anything a future dependency drags in.
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "claude-agent-cli"
+      "claude-code"
+    ];
 
   networking.hostName = lib.mkDefault "talonos";
 

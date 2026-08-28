@@ -26,9 +26,15 @@
 
       forAllSystems = f: lib.genAttrs systems f;
 
-      # claude-code is unfree. Allow exactly it rather than opening the gate:
-      # an appliance that needs one proprietary binary should say which one.
-      allowClaudeCode = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
+      # The backend CLI is unfree. Allow exactly the packages we mean, by name,
+      # rather than opening the gate: an appliance that needs a proprietary
+      # binary should have to say which one.
+      allowClaudeCode =
+        pkg:
+        builtins.elem (lib.getName pkg) [
+          "claude-agent-cli"
+          "claude-code"
+        ];
 
       pkgsFor =
         system:
@@ -73,6 +79,7 @@
         in
         {
           talon = pkgs.talon;
+          claude-agent-cli = pkgs.claude-agent-cli;
           default = pkgs.talon;
         }
         // lib.optionalAttrs (system == "x86_64-linux") {

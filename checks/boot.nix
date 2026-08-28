@@ -100,6 +100,14 @@ pkgs.testers.runNixOSTest {
         'test -x "$(jq -r .claudeBinary /var/lib/talon/.talon/config.json)"'
     )
 
+    # ...and it is the CLI generation the SDK inside this Talon build expects.
+    # A mismatched one dies on an unknown flag, which is how nixpkgs'
+    # independently-versioned claude-code failed here.
+    machine.fail('journalctl -u talon.service --no-pager | grep -q "unknown option"')
+    machine.fail(
+        'journalctl -u talon.service --no-pager | grep -q "model discovery failed"'
+    )
+
     # The packaged binary runs inside the booted image, not just on a builder.
     print(machine.succeed("${pkgs.lib.getExe pkgs.talon} --version"))
 
