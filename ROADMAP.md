@@ -19,10 +19,11 @@ flake evaluates on x86_64 and aarch64, and `./result/bin/talon --version` prints
 
 ## v0.2 — it boots  ← we are here
 
-- [ ] qcow2 image builds in CI
-- [ ] qcow2 boots under QEMU and reaches `multi-user.target`
-- [ ] `systemctl status talon` is active with a real config
-- [ ] Serial console log committed to `docs/boot-logs/` as evidence
+- [x] qcow2 image builds in CI — 2.2 GB, 13m13s ([run 33169590715](https://github.com/claudiusthebot/talonos/actions/runs/33169590715))
+- [x] Boots under QEMU and reaches `multi-user.target` — 16.42 s ([run 33170679056](https://github.com/claudiusthebot/talonos/actions/runs/33170679056))
+- [x] Console log committed to [`docs/boot-logs/`](docs/boot-logs/2026-08-28-first-boot.md) as evidence
+- [x] Boot test guards against the first-run wizard blocking a headless boot
+- [ ] `talon run` stays up on a configured appliance without a backend present
 - [ ] Pi 5 SD image boots on actual hardware
 
 **Done when:** a booted VM answers a message. Not before.

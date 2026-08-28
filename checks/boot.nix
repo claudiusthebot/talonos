@@ -5,10 +5,14 @@
 # wired in, or whether the binary we patchelf'd runs anywhere except a build
 # runner. This boots the actual appliance config under QEMU and checks.
 #
-# Note what is NOT asserted: that talon.service is *active*. With no credentials
-# the daemon exits and systemd restarts it. A test that demanded `active` would
-# pass only when CI held a working token, which makes it a test of the secret
-# store rather than of the OS. Assert what is true.
+# The first version of this test passed while the appliance was broken: every
+# assertion was about systemd's opinion of the unit, and systemd's opinion was
+# "active" while the process sat in an interactive setup wizard waiting for a
+# keypress that could never arrive. See docs/boot-logs/2026-08-28-first-boot.md.
+# The assertions below are chosen to fail if that happens again.
+#
+# Still NOT asserted: that the agent reaches a backend. That needs credentials,
+# and a test that demanded them would be a test of the CI secret store.
 { pkgs, self }:
 
 pkgs.testers.runNixOSTest {
@@ -27,7 +31,11 @@ pkgs.testers.runNixOSTest {
       # re-overlaid.
       services.talonos.package = pkgs.talon;
 
+      # `native` is the client-bridge frontend: upstream's isConfigured() treats
+      # it as configured with no credential at all, so this exercises a real
+      # daemon start without a secret anywhere near CI.
       services.talonos.settings = {
+        frontend = "native";
         backend = "claude";
         model = "claude-opus-5";
       };
@@ -53,7 +61,7 @@ pkgs.testers.runNixOSTest {
     # keys the image declares are the keys that ended up there.
     machine.wait_for_file("/var/lib/talon/.talon/config.json")
     machine.succeed(
-        "jq -e '.backend == \"claude\" and .model == \"claude-opus-5\"' "
+        "jq -e '.frontend == \"native\" and .backend == \"claude\"' "
         "/var/lib/talon/.talon/config.json"
     )
 
@@ -68,6 +76,17 @@ pkgs.testers.runNixOSTest {
     machine.succeed(
         'test "$(systemctl show -p NoNewPrivileges --value talon.service)" = yes'
     )
+
+    # THE regression guard: the unit must invoke the attached daemon, never the
+    # interactive menu.
+    machine.succeed(
+        "systemctl show -p ExecStart --value talon.service | grep -qw run"
+    )
+
+    # And it must never reach the first-run wizard on a machine with no console.
+    machine.sleep(15)
+    print(machine.succeed("journalctl -u talon.service --no-pager | tail -n 40"))
+    machine.fail('journalctl -u talon.service --no-pager | grep -q "Setup Wizard"')
 
     # The packaged binary runs inside the booted image, not just on a builder.
     print(machine.succeed("${pkgs.lib.getExe pkgs.talon} --version"))

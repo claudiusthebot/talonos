@@ -74,7 +74,7 @@ in
     extraArgs = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
-      description = "Extra arguments passed to the talon binary. Bare `talon` starts the daemon.";
+      description = "Extra arguments appended to `talon run`.";
     };
 
     extraPackages = lib.mkOption {
@@ -156,7 +156,13 @@ in
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = lib.escapeShellArgs ([ (lib.getExe cfg.package) ] ++ cfg.extraArgs);
+        # `run` is attached foreground mode, which is what Type=simple wants.
+        # Bare `talon` is the INTERACTIVE MENU: on a headless box with no config
+        # it drops into the first-run setup wizard and blocks forever while
+        # systemd cheerfully reports the unit as active. `talon start`
+        # self-daemonizes and would double-fork out from under the unit.
+        # Upstream documents both traps in packaging/systemd/talon-package.service.
+        ExecStart = lib.escapeShellArgs ([ (lib.getExe cfg.package) "run" ] ++ cfg.extraArgs);
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = cfg.stateDir;
