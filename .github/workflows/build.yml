@@ -20,8 +20,10 @@ jobs:
       - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+      # Evaluation only. The VM test is a check too, and building it here would
+      # turn a 50-second gate into a 20-minute one.
       - name: Evaluate every output on every system
-        run: nix flake check --all-systems --show-trace
+        run: nix flake check --all-systems --no-build --show-trace
 
   package:
     name: build talon package
@@ -34,6 +36,29 @@ jobs:
       # A package that builds but does not execute has proved nothing.
       - name: Prove the binary runs
         run: ./result/bin/talon --version
+
+  boot:
+    name: boot test (qemu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Reclaim disk
+        run: |
+          df -h /
+          sudo rm -rf /opt/hostedtoolcache /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Report acceleration
+        run: |
+          if [ -e /dev/kvm ]; then echo "KVM available"; else echo "no KVM — falling back to TCG, expect this to be slow"; fi
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Boot the appliance under QEMU
+        run: nix build .#checks.x86_64-linux.boot -L --show-trace
 
   image:
     name: build qcow2 image

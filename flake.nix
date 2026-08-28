@@ -88,6 +88,18 @@
         }
       );
 
+      # x86_64 only: a VM test cannot be built on a machine that cannot run the
+      # guest, and pretending otherwise just breaks `nix flake check` elsewhere.
+      checks = forAllSystems (
+        system:
+        lib.optionalAttrs (system == "x86_64-linux") {
+          boot = import ./checks/boot.nix {
+            pkgs = pkgsFor system;
+            inherit self;
+          };
+        }
+      );
+
       # For people who want the appliance shape on a machine they already own:
       #   nixos-rebuild switch --flake github:claudiusthebot/talonos#appliance
       nixosConfigurations.appliance = nixpkgs.lib.nixosSystem {
