@@ -68,3 +68,41 @@ Two fixes, both in the following commit:
 An assertion about systemd's opinion of a unit is not an assertion about the
 process being alive in any useful sense. Ask what the check would look like if
 the thing were broken — if the answer is "identical", it is not a check.
+
+---
+
+# It actually runs — same day, three fixes later
+
+Run: [33178065135](https://github.com/claudiusthebot/talonos/actions/runs/33178065135)
+
+Each fix only exposed the next problem, and none of them were visible from a
+successful image build:
+
+1. `ExecStart` ran the interactive menu → wizard, blocked forever (above).
+2. `talon run` reached the daemon, which then died: *Native CLI binary for
+   linux-x64 not found* → five-second crash loop. The image had no backend.
+3. Shipping nixpkgs' `claude-code` for (2) was the wrong backend: it is
+   versioned independently of the agent SDK, and died on
+   `unknown option '--allow-dangerously-skip-permissions'`. The SDK and CLI are
+   a matched pair — talon v3.28.0 pins sdk 0.3.235, which ships claude 2.1.235.
+
+With the version-matched CLI in the image:
+
+```
+talon[845]: INFO: Action gateway on :19876              component: "gateway"
+talon[845]: INFO: Bridge listening on http://127.0.0.1:19880
+talon[845]: INFO: Wrote bridge discovery file at /var/lib/talon/.talon/native-bridge.json
+talon[845]: INFO: Starting Talon...                     component: "bot"
+talon[845]: INFO: Started: checking every 5m            component: "pulse"
+talon[845]: INFO: Starting heartbeat timer (every 60min, first due check in 5min)
+talon[845]: INFO: Started: checking every 60s           component: "cron"
+talon[845]: INFO: Native bridge ready (0 chat(s)) — connect a client to :19880
+```
+
+Model discovery passes with no credential at all, the FUSE namespace mounts,
+cron and heartbeat schedulers start, and the bridge serves. No restarts.
+
+The boot test now asserts liveness rather than paperwork: `is-active`,
+`NRestarts = 0`, and port 19880 open. Note the ordering — that assertion would
+have been dishonest one commit earlier, when the daemon exited by design and
+demanding `active` would really have been demanding a credential in CI.

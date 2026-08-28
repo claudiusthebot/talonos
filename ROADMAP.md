@@ -25,10 +25,13 @@ flake evaluates on x86_64 and aarch64, and `./result/bin/talon --version` prints
 - [x] Boot test guards against the first-run wizard blocking a headless boot
 - [x] `talon run` starts the real daemon (seeds prompts, initialises the DB, brings up the frontend)
 - [x] The backend CLI ships in the image and is declared to Talon as `claudeBinary`
-- [ ] A credentialed appliance stays up rather than restart-looping
+- [x] The agent stays up: model discovery passes, zero restarts, FUSE namespace
+      mounted, action gateway on :19876, native bridge serving on :19880
 - [ ] Pi 5 SD image boots on actual hardware
+- [ ] A client connects to the bridge and gets an answer
 
-**Done when:** a booted VM answers a message. Not before.
+**Done when:** a booted VM answers a message. Not before — everything above is
+the machine being ready to, which is not the same claim.
 
 ## v0.3 — it provisions
 

@@ -108,6 +108,15 @@ pkgs.testers.runNixOSTest {
         'journalctl -u talon.service --no-pager | grep -q "model discovery failed"'
     )
 
+    # Liveness, not paperwork: the daemon is still up after settling, it never
+    # restarted, and it is actually serving on its bridge port. This assertion
+    # was NOT honest to make until the backend shipped — before that the daemon
+    # exited by design, and demanding `active` would have been a demand for a
+    # credential in CI.
+    machine.succeed("systemctl is-active talon.service")
+    machine.succeed('test "$(systemctl show -p NRestarts --value talon.service)" = 0')
+    machine.wait_for_open_port(19880)
+
     # The packaged binary runs inside the booted image, not just on a builder.
     print(machine.succeed("${pkgs.lib.getExe pkgs.talon} --version"))
 
