@@ -27,7 +27,11 @@ flake evaluates on x86_64 and aarch64, and `./result/bin/talon --version` prints
 - [x] The backend CLI ships in the image and is declared to Talon as `claudeBinary`
 - [x] The agent stays up: model discovery passes, zero restarts, FUSE namespace
       mounted, action gateway on :19876, native bridge serving on :19880
-- [ ] Pi 5 SD image boots on actual hardware
+- [x] aarch64 package builds and runs on a native arm runner
+- [x] Raspberry Pi SD image builds — 1.5 GB zstd
+      (`nixos-image-sd-card-talonos-…-aarch64-linux.img.zst`)
+- [ ] Pi 5 SD image boots on actual hardware — hosted arm runners have no
+      `/dev/kvm`, so CI can only emulate; real confidence needs a Pi
 - [ ] A client connects to the bridge and gets an answer
 
 **Done when:** a booted VM answers a message. Not before — everything above is

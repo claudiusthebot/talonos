@@ -125,7 +125,12 @@
           # its own — same-architecture TCG, which is slow but not absurd. Use
           # this only where hardware virtualisation is genuinely unavailable;
           # `boot` remains the real gate.
-          boot-tcg = boot.overrideAttrs (_: {
+          #
+          # `overrideAttrs` is not available here: runNixOSTest returns a
+          # derivation extended with the test's passthru, not a plain mkDerivation
+          # result. lib.overrideDerivation rewrites drvAttrs directly and does
+          # work on it.
+          boot-tcg = lib.overrideDerivation boot (_: {
             requiredSystemFeatures = [ "nixos-test" ];
           });
         }
