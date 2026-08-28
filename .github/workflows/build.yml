@@ -60,8 +60,8 @@ jobs:
       - name: Boot the appliance under QEMU
         run: nix build .#checks.x86_64-linux.boot -L --show-trace
 
-  boot-arm:
-    name: boot test (aarch64)
+  package-arm:
+    name: aarch64 package
     # Public-repo arm runner: builds and boots the aarch64 appliance natively
     # instead of emulating it, which is the difference between a 20-minute job
     # and an all-day one.
@@ -76,10 +76,6 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
 
-      - name: Report acceleration
-        run: |
-          if [ -e /dev/kvm ]; then echo "KVM available"; else echo "no KVM — falling back to TCG, expect this to be slow"; fi
-
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
@@ -87,15 +83,10 @@ jobs:
       - name: Prove the aarch64 binary runs
         run: ./result/bin/talon --version
 
-      # Hosted arm runners report no /dev/kvm, so the KVM-requiring variant is
-      # unbuildable here — measured, not assumed:
-      #   Required features: {kvm, nixos-test}
-      #   Available: {benchmark, big-parallel, nixos-test, uid-range}
-      # boot-tcg drops that requirement and lets QEMU fall back to emulation.
-      # Real aarch64 confidence still comes from a Pi, not from this job.
-      - name: Boot the aarch64 appliance under QEMU (no KVM, emulated)
-        timeout-minutes: 45
-        run: nix build .#checks.aarch64-linux.boot-tcg -L --show-trace
+      # No boot test here on purpose. Hosted arm runners have no /dev/kvm, so a
+      # NixOS VM test cannot be built on them at all, and the emulated variant
+      # would only prove the closure is intact. aarch64 boot is verified on a
+      # real Pi; see ROADMAP v0.2.
 
   image-sd:
     name: build Raspberry Pi SD image

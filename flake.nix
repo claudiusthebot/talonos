@@ -103,38 +103,24 @@
       # Defined for both systems. It only *builds* on a host that can run the
       # guest, which is why CI runs the aarch64 one on an arm runner rather than
       # emulating it; `nix flake check --no-build` still evaluates both.
-      checks = forAllSystems (
-        system:
-        let
-          boot = import ./checks/boot.nix {
-            pkgs = pkgsFor system;
-            inherit self;
-          };
-        in
-        {
-          inherit boot;
-
-          # The same test with the KVM requirement dropped. GitHub's hosted
-          # aarch64 runners have no /dev/kvm, so the nix daemon never advertises
-          # the `kvm` feature and `boot` is unbuildable there:
-          #
-          #   Required features: {kvm, nixos-test}
-          #   Available features: {benchmark, big-parallel, nixos-test, uid-range}
-          #
-          # QEMU is started with accel=kvm:tcg, so it degrades to emulation on
-          # its own — same-architecture TCG, which is slow but not absurd. Use
-          # this only where hardware virtualisation is genuinely unavailable;
-          # `boot` remains the real gate.
-          #
-          # `overrideAttrs` is not available here: runNixOSTest returns a
-          # derivation extended with the test's passthru, not a plain mkDerivation
-          # result. lib.overrideDerivation rewrites drvAttrs directly and does
-          # work on it.
-          boot-tcg = lib.overrideDerivation boot (_: {
-            requiredSystemFeatures = [ "nixos-test" ];
-          });
-        }
-      );
+      # Defined for both systems; it only *builds* where the host can run the
+      # guest. Hosted aarch64 runners cannot: they have no /dev/kvm, so the nix
+      # daemon never advertises the `kvm` feature that a NixOS VM test requires.
+      #
+      #   Required features: {kvm, nixos-test}
+      #   Available features: {benchmark, big-parallel, nixos-test, uid-range}
+      #
+      # Two attempts to relax that requirement on the test derivation failed
+      # (`overrideAttrs` and then `drvAttrs` are both absent from what
+      # runNixOSTest returns), and an emulated boot would have been weak
+      # evidence anyway — it proves the closure is not broken, not that a Pi 5
+      # boots off the SD card. aarch64 boot confidence comes from hardware.
+      checks = forAllSystems (system: {
+        boot = import ./checks/boot.nix {
+          pkgs = pkgsFor system;
+          inherit self;
+        };
+      });
 
       # For people who want the appliance shape on a machine they already own:
       #   nixos-rebuild switch --flake github:claudiusthebot/talonos#appliance
