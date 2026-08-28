@@ -4,19 +4,22 @@ Long-term project, single maintainer, no deadline pressure. Milestones are order
 dependency, not by date. Each one ends with something that can be demonstrated, not
 something that can be described.
 
-## v0.1 — it builds  ← we are here
+## v0.1 — it builds ✅
 
 - [x] Flake with package, module and image targets
 - [x] `pkgs.talon` from the upstream release binary
 - [x] `services.talonos` hardened unit
 - [x] Appliance profile (headless, key-only ssh, zram, journal caps)
-- [ ] CI green on `nix flake check --all-systems`
-- [ ] `nix build .#talon` verified to produce a binary that runs
+- [x] CI green on `nix flake check --all-systems`
+- [x] `nix build .#talon` verified to produce a binary that runs
 
-**Done when:** CI is green and the packaged binary prints its version on x86_64.
+**Done** — [run 33169325570](https://github.com/claudiusthebot/talonos/actions/runs/33169325570):
+flake evaluates on x86_64 and aarch64, and `./result/bin/talon --version` prints
+`3.28.0` on a clean runner. Building is not the claim; executing is.
 
-## v0.2 — it boots
+## v0.2 — it boots  ← we are here
 
+- [ ] qcow2 image builds in CI
 - [ ] qcow2 boots under QEMU and reaches `multi-user.target`
 - [ ] `systemctl status talon` is active with a real config
 - [ ] Serial console log committed to `docs/boot-logs/` as evidence
