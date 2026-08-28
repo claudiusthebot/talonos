@@ -23,7 +23,9 @@ flake evaluates on x86_64 and aarch64, and `./result/bin/talon --version` prints
 - [x] Boots under QEMU and reaches `multi-user.target` — 16.42 s ([run 33170679056](https://github.com/claudiusthebot/talonos/actions/runs/33170679056))
 - [x] Console log committed to [`docs/boot-logs/`](docs/boot-logs/2026-08-28-first-boot.md) as evidence
 - [x] Boot test guards against the first-run wizard blocking a headless boot
-- [ ] `talon run` stays up on a configured appliance without a backend present
+- [x] `talon run` starts the real daemon (seeds prompts, initialises the DB, brings up the frontend)
+- [x] The backend CLI ships in the image and is declared to Talon as `claudeBinary`
+- [ ] A credentialed appliance stays up rather than restart-looping
 - [ ] Pi 5 SD image boots on actual hardware
 
 **Done when:** a booted VM answers a message. Not before.

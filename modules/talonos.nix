@@ -15,7 +15,15 @@ let
 
   # The declarative half of ~/.talon/config.json. Anything not named here is
   # left alone at runtime, which matters because the agent edits its own config.
-  declaredConfig = pkgs.writeText "talon-config.json" (builtins.toJSON cfg.settings);
+  # The backend binary is part of the image, so the image is what tells Talon
+  # where it is. Explicit `settings` still win — this is a default, not a lock.
+  effectiveSettings =
+    (lib.optionalAttrs (cfg.claudePackage != null) {
+      claudeBinary = lib.getExe cfg.claudePackage;
+    })
+    // cfg.settings;
+
+  declaredConfig = pkgs.writeText "talon-config.json" (builtins.toJSON effectiveSettings);
 
   talonHome = "${cfg.stateDir}/.talon";
 in
@@ -77,6 +85,24 @@ in
       description = "Extra arguments appended to `talon run`.";
     };
 
+    claudePackage = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = pkgs.claude-code or null;
+      defaultText = lib.literalExpression "pkgs.claude-code";
+      description = ''
+        The Claude Code CLI the agent shells out to, placed on PATH and written
+        into config as `claudeBinary`.
+
+        This is not optional decoration: Talon's compiled binary does not embed
+        the agent SDK's native CLI, so without it the daemon starts, fails model
+        discovery and exits into a restart loop. An OS for running Talon has to
+        ship the backend.
+
+        Set to null to manage the backend yourself. Note that claude-code is
+        unfree, so a configuration that keeps this default must permit it.
+      '';
+    };
+
     extraPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [ ];
@@ -124,7 +150,7 @@ in
         "time-sync.target"
       ];
 
-      path = cfg.extraPackages ++ (with pkgs; [
+      path = cfg.extraPackages ++ lib.optional (cfg.claudePackage != null) cfg.claudePackage ++ (with pkgs; [
         bash
         coreutils
         curl

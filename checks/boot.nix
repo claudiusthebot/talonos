@@ -88,6 +88,18 @@ pkgs.testers.runNixOSTest {
     print(machine.succeed("journalctl -u talon.service --no-pager | tail -n 40"))
     machine.fail('journalctl -u talon.service --no-pager | grep -q "Setup Wizard"')
 
+    # The backend CLI ships with the image, so this specific fatal must be gone.
+    # Not asserted: that the agent authenticates. That needs a credential, and a
+    # test that needed one would be testing the CI secret store again.
+    machine.fail(
+        'journalctl -u talon.service --no-pager | grep -q "Native CLI binary"'
+    )
+    # And the path written into config actually points at an executable, rather
+    # than at a store path that was never realised.
+    machine.succeed(
+        'test -x "$(jq -r .claudeBinary /var/lib/talon/.talon/config.json)"'
+    )
+
     # The packaged binary runs inside the booted image, not just on a builder.
     print(machine.succeed("${pkgs.lib.getExe pkgs.talon} --version"))
 

@@ -26,11 +26,16 @@
 
       forAllSystems = f: lib.genAttrs systems f;
 
+      # claude-code is unfree. Allow exactly it rather than opening the gate:
+      # an appliance that needs one proprietary binary should say which one.
+      allowClaudeCode = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
+
       pkgsFor =
         system:
         import nixpkgs {
           inherit system;
           overlays = [ self.overlays.default ];
+          config.allowUnfreePredicate = allowClaudeCode;
         };
 
       # Every TalonOS artifact — image or rebuilt machine — is these three things

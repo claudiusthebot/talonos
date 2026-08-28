@@ -4,6 +4,10 @@
 { lib, ... }:
 
 {
+  # The backend CLI (claude-code) is unfree. Allow that one package by name;
+  # a blanket allowUnfree would quietly permit anything a future dependency drags in.
+  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "claude-code" ];
+
   networking.hostName = lib.mkDefault "talonos";
 
   # First boot has no keys and no tailnet. Ship a console-visible pairing path
