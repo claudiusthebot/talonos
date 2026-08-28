@@ -11,11 +11,14 @@
 }:
 
 {
-  # No desktop, no docs, no sound, no printing. Every megabyte in the image is
-  # something that can rot or be attacked.
+  # No desktop, no docs, no printing. Every megabyte in the image is something
+  # that can rot or be attacked.
+  #
+  # There is no `sound.enable = false` here: the option was removed in NixOS
+  # 25.05 and setting it is now a hard assertion failure. Nothing pulls in ALSA
+  # userspace on a headless image, so there is nothing to turn off.
   documentation.enable = lib.mkDefault false;
   documentation.nixos.enable = lib.mkDefault false;
-  sound.enable = lib.mkDefault false;
   services.xserver.enable = lib.mkDefault false;
   fonts.fontconfig.enable = lib.mkDefault false;
   programs.command-not-found.enable = lib.mkDefault false;
