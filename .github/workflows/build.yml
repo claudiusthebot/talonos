@@ -1,0 +1,48 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: flake check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Evaluate every output on every system
+        run: nix flake check --all-systems --show-trace
+
+  package:
+    name: build talon package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix build .#talon --show-trace
+      # A package that builds but does not execute has proved nothing.
+      - name: Prove the binary runs
+        run: ./result/bin/talon --version
+
+  image:
+    name: build qcow2 image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - run: nix build .#image-qcow2 --show-trace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talonos-qcow2
+          path: result/**
