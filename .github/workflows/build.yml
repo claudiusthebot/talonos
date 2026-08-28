@@ -6,8 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Keyed on the event as well as the ref: without that, a push to main cancels an
+# in-flight manual image build, which is exactly how the first qcow2 attempt died.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -15,7 +17,7 @@ jobs:
     name: flake check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Evaluate every output on every system
@@ -25,7 +27,7 @@ jobs:
     name: build talon package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix build .#talon --show-trace
@@ -38,11 +40,29 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # A hosted runner starts with ~14 GB free. A NixOS disk image plus its
+      # closure does not fit; the preinstalled toolchains we will never use do.
+      - name: Reclaim disk
+        run: |
+          df -h /
+          sudo rm -rf /opt/hostedtoolcache /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          sudo docker image prune --all --force || true
+          df -h /
+
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: nix build .#image-qcow2 --show-trace
+
+      - run: nix build .#image-qcow2 --show-trace --print-build-logs
+
+      - name: Describe what came out
+        run: |
+          ls -lh result/
+          du -sh result/
+
       - uses: actions/upload-artifact@v4
         with:
           name: talonos-qcow2
           path: result/**
+          compression-level: 0
