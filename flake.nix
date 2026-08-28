@@ -105,11 +105,29 @@
       # emulating it; `nix flake check --no-build` still evaluates both.
       checks = forAllSystems (
         system:
-        {
+        let
           boot = import ./checks/boot.nix {
             pkgs = pkgsFor system;
             inherit self;
           };
+        in
+        {
+          inherit boot;
+
+          # The same test with the KVM requirement dropped. GitHub's hosted
+          # aarch64 runners have no /dev/kvm, so the nix daemon never advertises
+          # the `kvm` feature and `boot` is unbuildable there:
+          #
+          #   Required features: {kvm, nixos-test}
+          #   Available features: {benchmark, big-parallel, nixos-test, uid-range}
+          #
+          # QEMU is started with accel=kvm:tcg, so it degrades to emulation on
+          # its own — same-architecture TCG, which is slow but not absurd. Use
+          # this only where hardware virtualisation is genuinely unavailable;
+          # `boot` remains the real gate.
+          boot-tcg = boot.overrideAttrs (_: {
+            requiredSystemFeatures = [ "nixos-test" ];
+          });
         }
       );
 

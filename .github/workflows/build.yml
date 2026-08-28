@@ -87,8 +87,15 @@ jobs:
       - name: Prove the aarch64 binary runs
         run: ./result/bin/talon --version
 
-      - name: Boot the aarch64 appliance under QEMU
-        run: nix build .#checks.aarch64-linux.boot -L --show-trace
+      # Hosted arm runners report no /dev/kvm, so the KVM-requiring variant is
+      # unbuildable here — measured, not assumed:
+      #   Required features: {kvm, nixos-test}
+      #   Available: {benchmark, big-parallel, nixos-test, uid-range}
+      # boot-tcg drops that requirement and lets QEMU fall back to emulation.
+      # Real aarch64 confidence still comes from a Pi, not from this job.
+      - name: Boot the aarch64 appliance under QEMU (no KVM, emulated)
+        timeout-minutes: 45
+        run: nix build .#checks.aarch64-linux.boot-tcg -L --show-trace
 
   image-sd:
     name: build Raspberry Pi SD image
